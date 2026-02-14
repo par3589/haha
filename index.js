@@ -1,48 +1,53 @@
+
 require('dotenv').config();
-
 const { Client, GatewayIntentBits } = require('discord.js');
-const { GoogleGenAI } = require("@google/genai");
+const express = require('express');
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+let currentCommand = "";
+
+// ===== HTTP SERVER =====
+app.get('/', (req, res) => {
+    res.send("Bot is running");
+});
+
+app.get('/command', (req, res) => {
+    const cmd = currentCommand;
+    currentCommand = "";
+    res.send(cmd);
+});
+
+app.listen(PORT, () => {
+    console.log("Web server running on port " + PORT);
+});
+
+// ===== DISCORD BOT =====
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
 });
 
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
+client.once('ready', () => {
+    console.log('机器人上线成功 🚀');
 });
 
-client.once('clientReady', () => {
-  console.log("机器人上线成功 🚀");
-});
+client.on('messageCreate', message => {
+    if (message.author.bot) return;
 
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
+    if (message.content === "!open") {
+        currentCommand = "open_notepad";
+        message.reply("已发送打开记事本指令");
+    }
 
-  let content = message.content.trim();
-  if (!content.startsWith("帮我")) return;
-
-  try {
-    const response = await genAI.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: content
-    });
-
-    // ✅ 兼容写法
-    const reply =
-      response.text ||
-      response.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "没有生成内容";
-
-    await message.reply(reply.slice(0, 1900));
-
-  } catch (error) {
-    console.error("详细错误：", error);
-    await message.reply("出错了 😢");
-  }
+    if (message.content === "!mouse") {
+        currentCommand = "move_mouse";
+        message.reply("已发送移动鼠标指令");
+    }
 });
 
 client.login(process.env.DISCORD_TOKEN);
