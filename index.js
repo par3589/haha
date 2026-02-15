@@ -1,72 +1,38 @@
-require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
-const express = require('express');
+import requests
+import time
+import pyautogui
+import os
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+SERVER_URL = "https://haha-production-9b07.up.railway.app/command"
 
-// ⚠️ 改成你自己的 Discord 用户ID（纯数字）
-const OWNER_ID = "1471789285983260672";
+print("控制程序启动成功...")
 
-let currentCommand = "";
+while True:
+    try:
+        response = requests.get(SERVER_URL)
+        command = response.text.strip()
 
-// ===== HTTP SERVER =====
-app.get('/', (req, res) => {
-    res.send("Bot is running");
-});
+        if command.startswith("search_google:"):
+            keyword = command.replace("search_google:", "").strip()
+            print("收到搜索指令:", keyword)
 
-// 电脑端轮询接口
-app.get('/command', (req, res) => {
-    const cmd = currentCommand;
-    currentCommand = "";
-    res.send(cmd);
-});
+            # 打开 Chrome
+            os.system("start chrome")
+            time.sleep(3)
 
-app.listen(PORT, () => {
-    console.log("Web server running on port " + PORT);
-});
+            # 打开 Google
+            pyautogui.hotkey('ctrl', 'l')
+            time.sleep(1)
+            pyautogui.write("https://www.google.com")
+            pyautogui.press("enter")
+            time.sleep(3)
 
-// ===== DISCORD BOT =====
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
+            # 输入搜索内容
+            pyautogui.write(keyword)
+            pyautogui.press("enter")
 
-client.once('clientReady', () => {
-    console.log('机器人上线成功 🚀');
-});
+        time.sleep(2)
 
-client.on('messageCreate', message => {
-    if (message.author.bot) return;
-
-    // 🔒 只允许你自己控制
-    if (message.author.id !== OWNER_ID) return;
-
-    // 打开记事本
-    if (message.content === "!open") {
-        currentCommand = "open_notepad";
-        message.reply("已发送打开记事本指令");
-    }
-
-    // 移动鼠标
-    if (message.content === "!mouse") {
-        currentCommand = "move_mouse";
-        message.reply("已发送移动鼠标指令");
-    }
-
-    // 查看当前命令
-    if (message.content === "!status") {
-        message.reply("当前命令：" + (currentCommand || "无"));
-    }
-
-    // 清空命令
-    if (message.content === "!clear") {
-        currentCommand = "";
-        message.reply("命令已清空");
-    }
-});
-
-client.login(process.env.DISCORD_TOKEN);
+    except Exception as e:
+        print("错误:", e)
+        time.sleep(5)
