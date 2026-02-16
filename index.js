@@ -20,7 +20,7 @@ client.on("messageCreate", async (message) => {
   if (message.content === "!test") {
     try {
       const response = await axios.post(
-        "https://saying-veterinary-cdna-police.trycloudflare.com/execute",
+        "https://libs-jerry-binding-areas.trycloudflare.com/execute",
         {
           action: "open",
           url: "https://polymarket.com"
