@@ -12,14 +12,26 @@ while True:
         response = requests.get(SERVER_URL)
         command = response.text.strip()
 
-        if command == "open_notepad":
-            print("收到打开记事本指令")
-            os.system("notepad")
-            time.sleep(2)
+        if command.startswith("search_google:"):
+            keyword = command.split("search_google:",1)[1].strip()
+            print("收到搜索指令:", keyword)
 
-        elif command == "move_mouse":
-            print("收到移动鼠标指令")
-            pyautogui.moveTo(500, 500, duration=1)
+            os.system("start chrome")
+            time.sleep(3)
+
+            pyautogui.hotkey('ctrl', 'l')
+            time.sleep(1)
+            pyautogui.write("https://www.google.com")
+            pyautogui.press("enter")
+            time.sleep(3)
+
+            pyautogui.write(keyword)
+            pyautogui.press("enter")
+
+        elif command.startswith("open_url:"):
+            url = command.split("open_url:",1)[1].strip()
+            print("收到打开网址指令:", url)
+            os.system(f"start {url}")
 
         time.sleep(2)
 
