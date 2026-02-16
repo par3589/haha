@@ -1,41 +1,38 @@
-import requests
-import time
-import pyautogui
-import os
+require("dotenv").config();
+const { Client, GatewayIntentBits } = require("discord.js");
+const axios = require("axios");
 
-SERVER_URL = "https://haha-production-9b07.up.railway.app/command"
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
+});
 
-print("控制程序启动成功...")
+client.once("ready", () => {
+  console.log("Bot 已上线");
+});
 
-while True:
-    try:
-        response = requests.get(SERVER_URL)
-        command = response.text.strip()
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
 
-        if command.startswith("search_google:"):
-            keyword = command.split("search_google:",1)[1].strip()
-            print("收到搜索指令:", keyword)
+  if (message.content === "!test") {
+    try {
+      const response = await axios.post(
+        "https://saying-veterinary-cdna-police.trycloudflare.com/execute",
+        {
+          action: "open",
+          url: "https://polymarket.com"
+        }
+      );
 
-            os.system("start chrome")
-            time.sleep(3)
+      message.reply(response.data.result);
+    } catch (err) {
+      console.error(err);
+      message.reply("失败: " + err.message);
+    }
+  }
+});
 
-            pyautogui.hotkey('ctrl', 'l')
-            time.sleep(1)
-            pyautogui.write("https://www.google.com")
-            pyautogui.press("enter")
-            time.sleep(3)
-
-            pyautogui.write(keyword)
-            pyautogui.press("enter")
-
-        elif command.startswith("open_url:"):
-            url = command.split("open_url:",1)[1].strip()
-            print("收到打开网址指令:", url)
-            os.system(f"start {url}")
-
-        time.sleep(2)
-
-    except Exception as e:
-        print("错误:", e)
-        time.sleep(5)
-
+client.login(process.env.DISCORD_TOKEN);
