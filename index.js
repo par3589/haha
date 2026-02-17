@@ -29,21 +29,25 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  // 原来的 !test 指令（暂时保留）
-  if (message.content === "!test") {
+  // 分析 Polymarket 热门市场
+  if (message.content === "!analyze") {
+    const thinking = await message.reply("⏳ 正在分析 Polymarket 市场，请稍候约15秒...");
     try {
       const response = await axios.post(
-        "http://localhost:8000/execute",
-        {
-          action: "open",
-          url: "https://polymarket.com"
-        },
+        "http://localhost:8000/analyze",
+        {},
         { timeout: 60000 }
       );
-      message.reply(response.data.result);
+      // Discord 单条消息最多 2000 字，超出就截断
+      const result = response.data.result;
+      if (result.length > 1900) {
+        await thinking.edit(result.substring(0, 1900) + "\n...(内容过长已截断)");
+      } else {
+        await thinking.edit(result);
+      }
     } catch (err) {
       console.error(err);
-      message.reply("失败: " + err.message);
+      await thinking.edit("❌ 失败: " + err.message);
     }
   }
 
