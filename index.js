@@ -1,3 +1,4 @@
+console.log("🔥🔥🔥 新版本已部署 2026-02-17 🔥🔥🔥");
 require("dotenv").config();
 const { 
   Client, 
@@ -115,3 +116,4 @@ process.on("unhandledRejection", (err) => {
    登录
 ================================ */
 client.login(process.env.DISCORD_TOKEN);
+
