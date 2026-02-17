@@ -36,7 +36,6 @@ client.on("messageCreate", async (message) => {
   if (message.content === "!analyze") {
     const thinking = await message.reply("⏳ 正在分析 Polymarket 市场，请稍候...");
     try {
-      // 获取热门市场数据
       const resp = await axios.get("https://gamma-api.polymarket.com/markets", {
         params: {
           active: "true",
@@ -54,16 +53,26 @@ client.on("messageCreate", async (message) => {
         return;
       }
 
-      // 整理市场信息
+      // 整理市场信息（修复：outcomes 可能是 JSON 字符串）
       const marketLines = markets.map(m => {
         const question = m.question || "未知";
         const volume = parseFloat(m.volume24hr || 0).toFixed(0);
-        const outcomes = m.outcomes || [];
-        const prices = m.outcomePrices || [];
+
+        // outcomes 和 outcomePrices 可能是字符串需要解析
+        let outcomes = m.outcomes || [];
+        let prices = m.outcomePrices || [];
+        if (typeof outcomes === "string") {
+          try { outcomes = JSON.parse(outcomes); } catch { outcomes = []; }
+        }
+        if (typeof prices === "string") {
+          try { prices = JSON.parse(prices); } catch { prices = []; }
+        }
+
         const options = outcomes.map((o, i) => {
           const pct = prices[i] ? (parseFloat(prices[i]) * 100).toFixed(1) : "?";
           return `${o}: ${pct}%`;
         }).join(" | ");
+
         return `问题：${question}\n24h交易量：$${parseInt(volume).toLocaleString()}\n赔率：${options || "暂无"}`;
       }).join("\n\n");
 
