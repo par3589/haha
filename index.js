@@ -1,16 +1,20 @@
 require("dotenv").config();
-const { Client, GatewayIntentBits, Partials } = require("discord.js");
-const axios = require("axios");
+const { 
+  Client, 
+  GatewayIntentBits, 
+  Partials 
+} = require("discord.js");
 const { GoogleGenAI } = require("@google/genai");
 
 /* ===============================
-   创建 Discord 客户端
+   创建客户端（全开调试）
 ================================ */
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages
   ],
   partials: [Partials.Channel]
 });
@@ -18,7 +22,7 @@ const client = new Client({
 /* ===============================
    启动信息
 ================================ */
-console.log("===== 启动调试模式 =====");
+console.log("====== 启动终极调试模式 ======");
 console.log("DISCORD_TOKEN:", process.env.DISCORD_TOKEN ? "已加载" : "未加载");
 console.log("GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "已加载" : "未加载");
 
@@ -27,6 +31,15 @@ console.log("GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "已加载" : "未�
 ================================ */
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
+});
+
+/* ===============================
+   监听所有原始 Gateway 事件
+================================ */
+client.on("raw", (packet) => {
+  if (packet.t === "MESSAGE_CREATE") {
+    console.log("🔥 收到 MESSAGE_CREATE 原始事件");
+  }
 });
 
 /* ===============================
@@ -44,14 +57,14 @@ client.once("clientReady", () => {
 });
 
 /* ===============================
-   监听所有消息
+   监听消息
 ================================ */
 client.on("messageCreate", async (message) => {
 
-  console.log("收到消息事件");
+  console.log("📩 收到 messageCreate 事件");
   console.log("频道：", message.channel?.name);
   console.log("内容：", message.content);
-  console.log("来自服务器：", message.guild?.name);
+  console.log("服务器：", message.guild?.name);
 
   if (message.author.bot) return;
 
@@ -76,7 +89,7 @@ client.on("messageCreate", async (message) => {
         ]
       });
 
-      console.log("Gemini 返回成功");
+      console.log("Gemini 成功返回");
       return message.reply("🤖 AI回复：\n" + response.text);
 
     } catch (err) {
@@ -85,6 +98,17 @@ client.on("messageCreate", async (message) => {
     }
   }
 
+});
+
+/* ===============================
+   错误监听
+================================ */
+client.on("error", (err) => {
+  console.error("Discord 客户端错误：", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("未处理 Promise 错误：", err);
 });
 
 /* ===============================
