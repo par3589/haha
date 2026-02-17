@@ -3,6 +3,9 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const axios = require("axios");
 const { GoogleGenAI } = require("@google/genai");
 
+/* ===============================
+   创建 Discord 客户端
+================================ */
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -10,6 +13,11 @@ const client = new Client({
     GatewayIntentBits.MessageContent
   ]
 });
+
+/* ===============================
+   初始化 Gemini
+================================ */
+console.log("GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "已加载" : "未加载");
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
@@ -26,26 +34,26 @@ client.once("clientReady", () => {
    消息监听
 ================================ */
 client.on("messageCreate", async (message) => {
+
+  console.log("📩 收到消息：", message.content);
+
   if (message.author.bot) return;
 
   /* ===============================
-     1️⃣ 查询服务器 IP
+     1️⃣ 基础测试
   ================================= */
-  if (message.content === "!ip") {
-    try {
-      const res = await axios.get("https://ifconfig.me/ip", {
-        headers: { "User-Agent": "curl/7.0" }
-      });
-      message.reply("🌐 服务器 IP：" + res.data);
-    } catch (err) {
-      message.reply("❌ 查询失败：" + err.message);
-    }
+  if (message.content === "!ping") {
+    console.log("执行 !ping");
+    return message.reply("🏓 pong");
   }
 
   /* ===============================
-     2️⃣ 测试 Gemini 是否正常
+     2️⃣ 测试 Gemini
   ================================= */
   if (message.content === "!test") {
+
+    console.log("执行 !test");
+
     try {
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -57,21 +65,39 @@ client.on("messageCreate", async (message) => {
         ]
       });
 
-      message.reply("🤖 AI回复：" + response.text);
+      console.log("Gemini 返回成功");
+
+      return message.reply("🤖 AI回复：\n" + response.text);
+
     } catch (err) {
-      console.error(err);
-      message.reply("❌ AI 调用失败：" + err.message);
+      console.error("Gemini 错误：", err);
+      return message.reply("❌ AI 调用失败：" + err.message);
     }
   }
 
   /* ===============================
-     3️⃣ 分析 Polymarket 热门市场
+     3️⃣ 查询服务器 IP
+  ================================= */
+  if (message.content === "!ip") {
+    try {
+      const res = await axios.get("https://ifconfig.me/ip", {
+        headers: { "User-Agent": "curl/7.0" }
+      });
+      return message.reply("🌐 服务器 IP：" + res.data);
+    } catch (err) {
+      return message.reply("❌ 查询失败：" + err.message);
+    }
+  }
+
+  /* ===============================
+     4️⃣ 分析 Polymarket
   ================================= */
   if (message.content === "!analyze") {
 
-    const thinking = await message.reply("⏳ 正在分析 Polymarket 市场，请稍候...");
+    const thinking = await message.reply("⏳ 正在分析市场...");
 
     try {
+
       const resp = await axios.get("https://gamma-api.polymarket.com/markets", {
         params: {
           active: "true",
@@ -86,8 +112,7 @@ client.on("messageCreate", async (message) => {
       const markets = resp.data;
 
       if (!markets || markets.length === 0) {
-        await thinking.edit("❌ 无法获取市场数据");
-        return;
+        return thinking.edit("❌ 无法获取市场数据");
       }
 
       const marketLines = markets.map(m => {
@@ -121,17 +146,17 @@ client.on("messageCreate", async (message) => {
 
       const prompt = `你是专业预测市场分析师。
 
-以下是 Polymarket 当前交易量最高的10个市场：
+以下是当前交易量最高的10个市场：
 
 ${marketLines}
 
 请分析：
-1. 哪些市场赔率存在偏差机会？
-2. 推荐1-3个最值得关注的市场
-3. 建议买 Yes 还是 No，并说明理由
+1. 哪些市场存在赔率偏差？
+2. 推荐1-3个值得关注的市场
+3. 建议买 Yes 还是 No
 4. 风险提示
 
-用中文回复，控制在500字以内。`;
+500字以内中文回答。`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -143,19 +168,17 @@ ${marketLines}
         ]
       });
 
-      const result = response.text;
-
-      const output = `📊 **Polymarket 市场分析**\n\n${result}`;
+      const output = "📊 市场分析：\n\n" + response.text;
 
       if (output.length > 1900) {
-        await thinking.edit(output.substring(0, 1900) + "\n...(已截断)");
-      } else {
-        await thinking.edit(output);
+        return thinking.edit(output.substring(0, 1900) + "\n...(已截断)");
       }
 
+      return thinking.edit(output);
+
     } catch (err) {
-      console.error(err);
-      await thinking.edit("❌ 分析失败：" + err.message);
+      console.error("分析错误：", err);
+      return thinking.edit("❌ 分析失败：" + err.message);
     }
   }
 
