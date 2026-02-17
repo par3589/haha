@@ -1,0 +1,6 @@
+{
+  "providers": ["node", "python"],
+  "deploy": {
+    "startCommand": "node start.js"
+  }
+}
